@@ -1,0 +1,209 @@
+---
+title: "Stat 545 Lecture Notes"
+author: "By Jennica Nichols"
+date: "September 24, 2017"
+output: 
+  html_document:
+    keep_md: true
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Stat545
+These are my personal notes from Stat 545 to help with my.
+
+## Lecture 1 
+### Add text to README file
+Go to Github and get link to clone. Open using in RStudio and pull to get the latest version. You can then make edits locally, where you then commit changes and then push back to the repository.
+
+## Lecture 2
+No notes to add
+
+## Lecture 3
+No notes to add
+
+## Lecture 4
+### Changing output format
+The following YAML formatting at the top for a markdown file will make sure that I keep the md intermediate file.
+
+output:
+  html_document:
+    keep_md: true  
+    
+[Here is information on YAML features for Markdown](http://rmarkdown.rstudio.com/html_document_format.html)
+
+[Here is a Markdown Cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
+
+## Lecture 5
+
+The first part of the lecture is to look at working with a dataframe
+```{r}
+##number of columns 
+ncol(iris)
+
+##column names
+colnames(iris)
+
+##number of rows
+nrow(iris)
+
+##smallest values for each numeric variable
+summary(iris)
+
+##make a histogram of Petal.Width
+hist(iris$Petal.Width)
+```
+
+The second part of the lecture is to learn the fundamentals of dplyr. The package's primary functions are:
+
+* Pick observations by their values (filter()).
+* Pick variables by their names (select()).
+* Reorder the rows (arrange()).
+* Create new variables with functions of existing variables (mutate()).
+* Collapse many values down to a single summary (summarise()).
+* Then there’s group_by(), which can be used in conjunction with all of these.
+
+```{r, warning=FALSE}
+#load libraries
+library(dplyr)
+library(gapminder)
+
+#use filer
+filter(gapminder, country=="Canada")
+```
+Relational operators are logical expressions that will give you either a TRUE or FALSE output. 
+* a == b means	a is equal to b
+* a != b means 	a is not equal to b.
+* a > b	means a is greater than b.
+* a < b	means a is less than b.
+* a >= b	means a is greater than or equal to b.
+* a <= b	means a is less than or equal to b.
+* a %in% b	means a is an element in b
+
+* a | b means a or b
+* a & b means a and b
+
+```{r}
+#testing these out
+4 %in% c(1, 2, 3, 4, 5)
+
+## Canada entries before 1970
+filter(gapminder, country == "Canada", year <1970)
+
+## Canada and Kenya entries after 1985
+filter(gapminder, country %in% c("Canada", "Kenya"), year>1985)
+
+## Canada and Kenya entries from the 1960s
+filter(gapminder, country %in% c("Canada", "Kenya"), year %in% 1960:1969)
+
+## Select only continent and country rows
+select(gapminder, continent, country)
+```
+Next is testing piping, which is where you chain together functions to run code efficiently. 
+
+```{r}
+#Select country, year, and GDP per capita for Canada and Kenya entries in the 1960s
+gapminder %>%
+  filter(country %in% c("Canada", "Kenya"), year %in%
+           1960:1969) %>%
+  select(country, year, gdpPercap)
+
+#Take all countries in Europe that have a GPD per capita greater than 10000, and select all variables except gdpPercap
+gapminder %>%
+  filter(continent=="Europe", gdpPercap>10000) %>%
+  select(-gdpPercap)
+
+#Order the data frame by year, then descending by life expectancy. Rearrange data frame so year comes first then life expectancy
+gapminder %>%
+  arrange(pop, desc(lifeExp)) %>%
+  select(year, lifeExp, everything())
+```
+
+You can use mutate to create new variables that are calculated from other variables within the data frame. 
+```{r}
+mutate(gapminder, 
+       gdp = gdpPercap * pop, 
+       gdpBill = round(gdp/1000000000, 1))
+```
+
+Summarize reduces the tibble to summary statistics, which is very useful when used with group_by
+```{r}
+gapminder %>% 
+    group_by(country) %>% 
+    summarize(mean_pop=mean(pop), sd_pop=sd(pop))
+
+#Find the minimum GDP per capita experienced by each country
+gapminder %>%
+  group_by(country) %>%
+  summarize(minGDP = min(gdpPercap))
+
+#Find how many years of records does each country have
+gapminder %>%
+  group_by(country) %>%
+  summarize(n_distinct(year))
+
+#Within Asia, what are the min and max life expectancies experienced in each year?
+gapminder %>% 
+    filter(continent=="Asia") %>% 
+    group_by(year) %>% 
+    summarize(minexp=min(lifeExp),
+              maxexp=max(lifeExp))
+```
+If want additional introduction to dplyr, 
+*[Stats 545 Intro Part 1](http://stat545.com/block009_dplyr-intro.html)
+*[Stats 545 Intro Part 2](http://stat545.com/block010_dplyr-end-single-table.html)
+
+# Lecture 6
+This lecture is about ggplot2. 
+
+```{r, warning=FALSE}
+#load library
+library(ggplot2)
+
+#create first layer that contains dataset and an indication of what variables will go to what scale
+p <- ggplot(gapminder, aes(x=year, y=lifeExp))
+
+#this is blank as you need to layer on points and asthetics which is done using a "+"
+p + geom_point(alpha=0.25)
+
+#make a scatterplot of GDP per capita and life expectancy
+p2 <- ggplot(gapminder, aes(x=gdpPercap, y=lifeExp))
+p2+ geom_point(aes(size=year, color=continent, alpha=1/20))
+
+#log transformation
+p3 <- p2 + geom_point() + scale_x_log10()
+
+#Colour log transformation by continent and set transparency and size
+p4 <- p3 + geom_point(aes(color = continent), alpha=(1/3), size=3)
+
+#Add a smooth line without standard error and using lm
+p4 + geom_smooth(method=lm, se = FALSE)
+
+#Take advantage of facetting (factoring)
+p4 + facet_wrap(~continent)
+
+##subsetting: looking at 4 countries
+jCountries <- c("Canada", "Kenya", "France", "India")
+
+ggplot(subset(gapminder, country %in% jCountries),
+       aes(x = year, y = lifeExp, color= country)) + geom_line() +   geom_point()
+
+#Make a plot of year (x) vs lifeExp (y), with points coloured by continent. Then, fit a regression line to each continent, without the error bars. If you can, try piping the data frame into the ggplot function
+q <- ggplot(gapminder, aes(x=year, y=lifeExp, color=continent))
+
+q + geom_point()+ geom_smooth(method=lm, se = FALSE)
+
+##Make a plot of year (x) vs lifeExp (y), facetted by continent. Then, fit a smoother through the data for each continent, without the error bars. Choose a span that you feel is appropriate.
+q + geom_point()+ geom_smooth(method=lm, se = FALSE) + facet_wrap(~continent)
+
+##Plot the population over time (year) using lines, so that each country has its own line. Add alpha transparency to your liking.Add points to the plot in Exercise 7.
+r <- ggplot(gapminder, aes(x=year, y=pop, group=country))
+r + geom_line(alpha=1/3) 
+
+r2 <-r + geom_line(alpha=1/3)
+r2 + geom_point() 
+```
+
+#  Lecture 7
