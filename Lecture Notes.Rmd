@@ -668,4 +668,4 @@ semi_join(gapminder, areas)
 ```{r}
 anti_join(gapminder, areas)
 ```
-
+**NOTE:** A [helpful cheatsheet](http://stat545.com/bit001_dplyr-cheatsheet.html) has been created for dplyr join functions.
