@@ -155,7 +155,7 @@ If want additional introduction to dplyr,
 *[Stats 545 Intro Part 1](http://stat545.com/block009_dplyr-intro.html)
 *[Stats 545 Intro Part 2](http://stat545.com/block010_dplyr-end-single-table.html)
 
-# Lecture 6
+## Lecture 6
 This lecture is about ggplot2. 
 
 ```{r, warning=FALSE}
@@ -207,7 +207,7 @@ r2 <-r + geom_line(alpha=1/3)
 r2 + geom_point() 
 ```
 
-#  Lecture 7
+##  Lecture 7
 ```{r}
 # Regression curves
 # Regression analysis fits some curve through the data, representing the mean of Y given the specified X value. Sometimes you assume a line (linear model) or can apply a general curve (i.e. a smoother)
@@ -267,8 +267,8 @@ ggplot(gapminder, aes(year, pop, group=country)) +
  
 ```
 
-# Lecture 8
-## Modeling
+## Lecture 8
+### Modeling
 First we will look at linear regression using the **lm()** function.
 ```{r}
 # create a linear model
@@ -313,7 +313,7 @@ predict(fit1, newdata=filter(gapminder, country=="Canada"))
     
 ```
 
-###Other Models:
+#### Other Models:
 1.  generalized linear models (such as logistic regression). For this, you use the **glm()** function. It is quite similar to lm, except you need to specify what model to run using the family argument. Syntax includes:
 
     * Poisson regression:
@@ -335,7 +335,7 @@ The gam function in either the gam package or mgcv package.
 5. Robust linear regression: 
 The rlm function in the MASS package is your friend
 
-## More dplyr
+### More dplyr
 One of the most powerful functions is using **mutate()** with grouped tibble. 
 ```{r}
 # Exercise 1: Calculate the growth in population since the first year on record for each country
@@ -362,7 +362,7 @@ gapminder %>%
     * Examples are lag, rank, cumsum.
     * See the window-functions vignette for the dplyr package.
 
-## More ggplot
+### More ggplot
 * The [ggplot2 cheatsheet](https://www.rstudio.com/wp-content/uploads/2015/03/ggplot2-cheatsheet.pdf) is very helpful for data visualization. 
 
 1. Themes
@@ -454,7 +454,7 @@ p1 + scale_y_continuous(position="right")
 p2 + theme(legend.position = "bottom")
 ```
 
-## Exercises
+### Exercises
 Practice what was learned above. 
 
 1. Suppose we want to calculate some quantity for each country in the gapminder data set. For each of the following quantities, indicate whether the function is vectorized, aggregate, or window, and use dplyr functions to calculate the specified variable.
@@ -519,7 +519,7 @@ gapminder %>%
                  
 ```
 
-# Lecture 9
+## Lecture 9
 It’s rare that a data analysis involves only a single table of data. In practice, you’ll normally have many tables that contribute to an analysis, and you need flexible tools to combine them. In dplyr, there are three families of verbs that work with two tables at a time (see below). All work similarly: the first two arguments are x and y, and provide the tables to combine. The output is always a new table with the same type as x.
 
 1. **Mutating Joins**, which add new variables to one table from matching rows in another.
@@ -557,7 +557,7 @@ flights2 %>% left_join(airports, c("dest" = "faa"))
 
 flights2 %>% left_join(airports, c("origin" = "faa"))
 ```
-###Types of Mutating Joins
+### Types of Mutating Joins
 ```{r}
 #create two test data frames to illustrate types
 (df1 <- data_frame(x = c(1, 2), y = 2:1))
@@ -669,3 +669,134 @@ semi_join(gapminder, areas)
 anti_join(gapminder, areas)
 ```
 **NOTE:** A [helpful cheatsheet](http://stat545.com/bit001_dplyr-cheatsheet.html) has been created for dplyr join functions.
+
+## Lecture 10
+Always want to make sure your data is tidy (i.e. each column is a variable and each row is an observation).
+```{r}
+#subgroup countries from the Americas
+Americas <- 
+  gapminder %>%
+  group_by(country) %>%
+  filter(continent == "Americas", year == 2007)
+
+#plot life Expectancy of countries in the Americans in 2007
+
+p <- ggplot(Americas, aes(x= country, y = lifeExp, fill = lifeExp))
+p + geom_bar(stat = "identity") +
+  scale_fill_gradient(low = "red",high="red4" ) +
+  guides(fill = guide_legend(reverse=TRUE))+
+  theme(axis.text.x = element_text(angle = 90, hjust=1))+
+  labs(title = "Life Expectancy of Countries in the Americans in 2007")
+```
+Most data that you get will be untidy because (1) people don't know the tidy principles and (2) data is often organied to facilitate some use other than analysis (e.g. easier data entry).
+
+To tidy your data:
+1) Figure out what the variables and observations are
+2) Resolve any common issues (e.g. one variable is spread across multiple columns, one observation is scattered across multiple rows)
+
+Common functions do this include(from **tidyr package**):
+
+### Gathering
+```{r}
+# Using data from base package
+table4a
+table4b
+
+# Making it tidy
+(tidy4a <-
+  table4a %>% 
+    gather(`1999`, `2000`, key = "Year", value = "cases"))
+
+## Note that “1999” and “2000” are non-syntactic names (because they don’t start with a letter) so we have to surround them in backticks
+
+(tidy4b <-
+  table4b %>%
+  gather(`1999`, `2000`, key = "Year", value = "Population"))
+
+## Combining together to create one data frame
+left_join(tidy4a, tidy4b)
+```
+  
+### Spreading
+Spreading is the opposite of gathering. You use it when an observation is scattered across multiple rows. The following table has countries as the observation, but they are spread across two rows:
+```{r}
+## Using data from base
+table2
+
+## Tidy it
+table2 %>%
+  spread(key = type, value = count)
+```
+  
+## Separate
+Separate pulls apart one column into multiple by splitting wherever a seperator character appears.
+* By default, the function will split values wherever it sees a non-alphanumeric character (i.e. a character that isn’t a number or letter). For example, below, separate() split the values of rate at the forward slash characters. If you wish to use a specific character to separate a column, you can pass the character to the sep argument.
+* The function will by default make the split columns into characters. Can add conver = TRUE to ask the function to try to do better
+```{r}
+# Using data from base
+table3
+
+# Tidy data. Rate contains cases and population
+table3  %>%
+  separate(rate, into = c("Cases", "Population"))
+
+# Tidy data. Rate contains cases and population (Take 2)
+table3  %>%
+  separate(rate, into = c("Cases", "Population"), convert = TRUE)
+```
+  
+You can also pass a vector of integers to sep that will  interpret the integers as positions to split at. Positive values start at 1 on the far-left of the strings; negative value start at -1 on the far-right of the strings. When using integers to separate strings, the length of *sep* should be one less than the number of names in *into*. For example, you may want to only have two digits for year:
+```{r}
+table3 %>% 
+  separate(year, into = c("century", "year"), sep = 2) %>%
+  select(-century)
+
+```
+
+
+# Lecture 11
+```{r}
+#install data set and libraries
+devtools::install_github("JoeyBernhardt/singer")
+library(singer)
+library(tidyverse)
+library(reshape2)
+
+# Task 1
+## move from wide format to narrow
+data("singer_locations")
+
+hfd_y <-singer_locations %>%
+  select(year, duration:artist_familiarity) %>%
+  gather(key= "Measures", value = "My_Values", 
+    duration:artist_familiarity)
+
+## graph the above in a meaningful way
+hfd_y %>%
+  filter(year > 1950) %>%
+  ggplot(aes(x = year, y = My_Values)) +
+  geom_point() +
+  facet_wrap(~Measures, scales = "free_y")  #free_y = allows y scales to match data for each graph in facet
+
+# Task 2: Add unique identifer and move back to wide format
+hfd_y2 <-singer_locations %>%
+  select(song_id, year, duration:artist_familiarity) %>%
+  gather(key= "Measures", value = "My_Values", 
+    duration:artist_familiarity)
+
+hfd_y2 %>%
+  spread(Measures, My_Values) #spread only works when each row has it's own unique ID
+
+# Task 3: Use Reshape 2 when do not have a unique ID or when you want to aggregate some rows
+hfd_y %>%
+  dcast(year ~ Measures, value.var = "My_Values", fun.aggregate = mean, na.rm = TRUE) 
+
+# The above means take the year value, use measures to spread the remaining columns, and use mean to aggregrate all rows for that year
+# If used variance instead of mean, you get some rows as N/A because there is only 1 row for that year (and therefore there is no variance to aggreate all the rows for that year)
+```
+  
+The rest of the lecture was about R objectives along with classes different objects apply (an object can belong to more than one class, e.g. ggplot, tibble). Interesting: >%> is a function (class(`%>%`)) and therefore can be used as a function. 
+
+    
+ 
+  

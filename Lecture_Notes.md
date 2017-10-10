@@ -959,6 +959,7 @@ p2 + scale_colour_continuous("Population\nin billions",
 ```
 
 ![](Lecture_Notes_files/figure-html/unnamed-chunk-14-3.png)<!-- -->
+  
 3. Labels
 Text to replace the data value labels. Most useful for discrete data.
 
@@ -970,7 +971,7 @@ ggplot(gapminder, aes(gdpPercap, lifeExp)) +
 ```
 
 ![](Lecture_Notes_files/figure-html/unnamed-chunk-15-1.png)<!-- -->
-
+  
 4. Limits
 Lower and upper bounds of the data that you'd like displayed. Leave one as NA if you want to use the default.
 
@@ -983,7 +984,7 @@ p1 + scale_y_continuous(limits=c(60,NA))
 ```
 
 ![](Lecture_Notes_files/figure-html/unnamed-chunk-16-1.png)<!-- -->
-
+  
 5. Position
 Position of the scale. Also controllable using theme for the legend.
 
@@ -1363,4 +1364,543 @@ df1 %>% full_join(df2)
 2. **Filtering joins**, which filter observations from one table based on whether or not they match an observation in the other table. Filtering joins match obserations in the same way as mutating joins, but affect the observations, not the variables. There are two types:
 a) **semi_join(x, y)** keeps all observations in x that have a match in y.
 b) **anti_join(x, y)** drops all observations in x that have a match in y
-* Set operations, which combine the observations in the data sets as if they were set elements.
+
+These are most useful for diagnosing join mismatches:
+
+```r
+# there are many flights in the nycflights13 dataset that don’t have a matching tail number in the planes table
+flights %>% 
+  anti_join(planes, by = "tailnum") %>% 
+  count(tailnum, sort = TRUE)
+```
+
+```
+## # A tibble: 722 x 2
+##    tailnum     n
+##      <chr> <int>
+##  1    <NA>  2512
+##  2  N725MQ   575
+##  3  N722MQ   513
+##  4  N723MQ   507
+##  5  N713MQ   483
+##  6  N735MQ   396
+##  7  N0EGMQ   371
+##  8  N534MQ   364
+##  9  N542MQ   363
+## 10  N531MQ   349
+## # ... with 712 more rows
+```
+  
+3. **Set operations** combine the observations in the data sets as if they were set elements. These expect the x and y inputs to have the same variables, and treat the observations like sets:
+    * **intersect(x, y)**: return only observations in both x and y
+    * **union(x, y)**: return unique observations in x and y
+    * **setdiff(x, y)**: return observations in x, but not in y.
+
+```r
+#create two simple datasets to test
+(df1 <- data_frame(x = 1:2, y = c(1L, 1L)))
+```
+
+```
+## # A tibble: 2 x 2
+##       x     y
+##   <int> <int>
+## 1     1     1
+## 2     2     1
+```
+
+```r
+(df2 <- data_frame(x = 1:2, y = 1:2))
+```
+
+```
+## # A tibble: 2 x 2
+##       x     y
+##   <int> <int>
+## 1     1     1
+## 2     2     2
+```
+
+```r
+#only keeps one observation 
+intersect(df1, df2)
+```
+
+```
+## # A tibble: 1 x 2
+##       x     y
+##   <int> <int>
+## 1     1     1
+```
+
+```r
+#has three observations (1 shared between two data sets, 1 unique observation from df1, 1 unique observation fom df2)
+union(df1, df2)
+```
+
+```
+## # A tibble: 3 x 2
+##       x     y
+##   <int> <int>
+## 1     1     1
+## 2     2     1
+## 3     2     2
+```
+
+```r
+#only 1 observation (1 unique from df1)
+setdiff(df1, df2)
+```
+
+```
+## # A tibble: 1 x 2
+##       x     y
+##   <int> <int>
+## 1     2     1
+```
+
+```r
+#only 1 observation (1 unique from df2)
+setdiff(df2, df1)
+```
+
+```
+## # A tibble: 1 x 2
+##       x     y
+##   <int> <int>
+## 1     2     2
+```
+
+### Coercion Rules
+When joining tables, dplyr is a little more conservative than base R about the types of variable that it considers equivalent. This is mostly likely to surprise if you’re working factors:
+    * Factors with different levels are coerced to character
+    * Factors with the same levels in a different order are coerced to character
+    * Factors are preserved only if the levels match exactly
+    * Factor and a character are coerced to character
+
+## Exercises:
+
+```r
+#Consider the following areas of countries, in hectares:
+(areas <- data.frame(country=c("Canada", "United States", "India", "Vatican City"), area=c(998.5*10^6, 983.4*10^6, 328.7*10^6, 44)) %>% 
+     as.tbl)
+```
+
+```
+## # A tibble: 4 x 2
+##         country      area
+##          <fctr>     <dbl>
+## 1        Canada 998500000
+## 2 United States 983400000
+## 3         India 328700000
+## 4  Vatican City        44
+```
+
+1) To the gapminder dataset, add an area variable using the areas tibble. Be sure to preserve all the rows of the original gapminder dataset.
+
+```r
+left_join(gapminder, areas)
+```
+
+```
+## Joining, by = "country"
+```
+
+```
+## Warning: Column `country` joining factors with different levels, coercing
+## to character vector
+```
+
+```
+## # A tibble: 1,704 x 7
+##        country continent  year lifeExp      pop gdpPercap  area
+##          <chr>    <fctr> <int>   <dbl>    <int>     <dbl> <dbl>
+##  1 Afghanistan      Asia  1952  28.801  8425333  779.4453    NA
+##  2 Afghanistan      Asia  1957  30.332  9240934  820.8530    NA
+##  3 Afghanistan      Asia  1962  31.997 10267083  853.1007    NA
+##  4 Afghanistan      Asia  1967  34.020 11537966  836.1971    NA
+##  5 Afghanistan      Asia  1972  36.088 13079460  739.9811    NA
+##  6 Afghanistan      Asia  1977  38.438 14880372  786.1134    NA
+##  7 Afghanistan      Asia  1982  39.854 12881816  978.0114    NA
+##  8 Afghanistan      Asia  1987  40.822 13867957  852.3959    NA
+##  9 Afghanistan      Asia  1992  41.674 16317921  649.3414    NA
+## 10 Afghanistan      Asia  1997  41.763 22227415  635.3414    NA
+## # ... with 1,694 more rows
+```
+  
+2) To the gapminder dataset, add an area variable using the areas tibble, but only keeping obervations for which areas are available
+
+```r
+inner_join(gapminder, areas)
+```
+
+```
+## Joining, by = "country"
+```
+
+```
+## Warning: Column `country` joining factors with different levels, coercing
+## to character vector
+```
+
+```
+## # A tibble: 36 x 7
+##    country continent  year lifeExp      pop gdpPercap      area
+##      <chr>    <fctr> <int>   <dbl>    <int>     <dbl>     <dbl>
+##  1  Canada  Americas  1952   68.75 14785584  11367.16 998500000
+##  2  Canada  Americas  1957   69.96 17010154  12489.95 998500000
+##  3  Canada  Americas  1962   71.30 18985849  13462.49 998500000
+##  4  Canada  Americas  1967   72.13 20819767  16076.59 998500000
+##  5  Canada  Americas  1972   72.88 22284500  18970.57 998500000
+##  6  Canada  Americas  1977   74.21 23796400  22090.88 998500000
+##  7  Canada  Americas  1982   75.76 25201900  22898.79 998500000
+##  8  Canada  Americas  1987   76.86 26549700  26626.52 998500000
+##  9  Canada  Americas  1992   77.95 28523502  26342.88 998500000
+## 10  Canada  Americas  1997   78.61 30305843  28954.93 998500000
+## # ... with 26 more rows
+```
+  
+3) Use a _join function to output the rows in areas corresponding to countries that are not found in the  gapminder dataset.
+
+```r
+anti_join(areas, gapminder)
+```
+
+```
+## Joining, by = "country"
+```
+
+```
+## Warning: Column `country` joining factors with different levels, coercing
+## to character vector
+```
+
+```
+## # A tibble: 1 x 2
+##        country  area
+##         <fctr> <dbl>
+## 1 Vatican City    44
+```
+  
+4) Use a _join function to output the rows in areas corresponding to countries that are found in the  gapminder dataset.
+
+```r
+semi_join(areas, gapminder, by="country")
+```
+
+```
+## Warning: Column `country` joining factors with different levels, coercing
+## to character vector
+```
+
+```
+## # A tibble: 3 x 2
+##         country      area
+##          <fctr>     <dbl>
+## 1        Canada 998500000
+## 2 United States 983400000
+## 3         India 328700000
+```
+  
+5) Construct a tibble that joins gapminder and areas, so that all rows found in each original tibble are also found in the final tibble.
+
+```r
+full_join(areas, gapminder, by="country")
+```
+
+```
+## Warning: Column `country` joining factors with different levels, coercing
+## to character vector
+```
+
+```
+## # A tibble: 1,705 x 7
+##    country      area continent  year lifeExp      pop gdpPercap
+##      <chr>     <dbl>    <fctr> <int>   <dbl>    <int>     <dbl>
+##  1  Canada 998500000  Americas  1952   68.75 14785584  11367.16
+##  2  Canada 998500000  Americas  1957   69.96 17010154  12489.95
+##  3  Canada 998500000  Americas  1962   71.30 18985849  13462.49
+##  4  Canada 998500000  Americas  1967   72.13 20819767  16076.59
+##  5  Canada 998500000  Americas  1972   72.88 22284500  18970.57
+##  6  Canada 998500000  Americas  1977   74.21 23796400  22090.88
+##  7  Canada 998500000  Americas  1982   75.76 25201900  22898.79
+##  8  Canada 998500000  Americas  1987   76.86 26549700  26626.52
+##  9  Canada 998500000  Americas  1992   77.95 28523502  26342.88
+## 10  Canada 998500000  Americas  1997   78.61 30305843  28954.93
+## # ... with 1,695 more rows
+```
+  
+6) Subset the gapminder dataset to have countries that are only found in the areas data frame.
+
+```r
+semi_join(gapminder, areas)
+```
+
+```
+## Joining, by = "country"
+```
+
+```
+## Warning: Column `country` joining factors with different levels, coercing
+## to character vector
+```
+
+```
+## # A tibble: 36 x 6
+##    country continent  year lifeExp      pop gdpPercap
+##     <fctr>    <fctr> <int>   <dbl>    <int>     <dbl>
+##  1  Canada  Americas  1952   68.75 14785584  11367.16
+##  2  Canada  Americas  1957   69.96 17010154  12489.95
+##  3  Canada  Americas  1962   71.30 18985849  13462.49
+##  4  Canada  Americas  1967   72.13 20819767  16076.59
+##  5  Canada  Americas  1972   72.88 22284500  18970.57
+##  6  Canada  Americas  1977   74.21 23796400  22090.88
+##  7  Canada  Americas  1982   75.76 25201900  22898.79
+##  8  Canada  Americas  1987   76.86 26549700  26626.52
+##  9  Canada  Americas  1992   77.95 28523502  26342.88
+## 10  Canada  Americas  1997   78.61 30305843  28954.93
+## # ... with 26 more rows
+```
+  
+7) Subset the gapminder dataset to have countries that are not found in the areas data frame.
+
+```r
+anti_join(gapminder, areas)
+```
+
+```
+## Joining, by = "country"
+```
+
+```
+## Warning: Column `country` joining factors with different levels, coercing
+## to character vector
+```
+
+```
+## # A tibble: 1,668 x 6
+##        country continent  year lifeExp      pop gdpPercap
+##         <fctr>    <fctr> <int>   <dbl>    <int>     <dbl>
+##  1 Afghanistan      Asia  1952  28.801  8425333  779.4453
+##  2 Afghanistan      Asia  1957  30.332  9240934  820.8530
+##  3 Afghanistan      Asia  1962  31.997 10267083  853.1007
+##  4 Afghanistan      Asia  1967  34.020 11537966  836.1971
+##  5 Afghanistan      Asia  1972  36.088 13079460  739.9811
+##  6 Afghanistan      Asia  1977  38.438 14880372  786.1134
+##  7 Afghanistan      Asia  1982  39.854 12881816  978.0114
+##  8 Afghanistan      Asia  1987  40.822 13867957  852.3959
+##  9 Afghanistan      Asia  1992  41.674 16317921  649.3414
+## 10 Afghanistan      Asia  1997  41.763 22227415  635.3414
+## # ... with 1,658 more rows
+```
+**NOTE:** A [helpful cheatsheet](http://stat545.com/bit001_dplyr-cheatsheet.html) has been created for dplyr join functions.
+
+# Lecture 10
+TO DO THIS
+
+# Lecture 11
+
+```r
+#install data set and libraries
+devtools::install_github("JoeyBernhardt/singer")
+```
+
+```
+## Skipping install of 'singer' from a github remote, the SHA1 (2b4fe9cb) has not changed since last install.
+##   Use `force = TRUE` to force installation
+```
+
+```r
+library(singer)
+library(tidyverse)
+```
+
+```
+## Warning: package 'tidyverse' was built under R version 3.3.3
+```
+
+```
+## Loading tidyverse: tibble
+## Loading tidyverse: tidyr
+## Loading tidyverse: readr
+## Loading tidyverse: purrr
+```
+
+```
+## Warning: package 'tibble' was built under R version 3.3.3
+```
+
+```
+## Warning: package 'tidyr' was built under R version 3.3.3
+```
+
+```
+## Warning: package 'purrr' was built under R version 3.3.3
+```
+
+```
+## Conflicts with tidy packages ----------------------------------------------
+```
+
+```
+## filter(): dplyr, stats
+## lag():    dplyr, stats
+```
+
+```r
+library(reshape2)
+```
+
+```
+## Warning: package 'reshape2' was built under R version 3.3.3
+```
+
+```
+## 
+## Attaching package: 'reshape2'
+```
+
+```
+## The following object is masked from 'package:tidyr':
+## 
+##     smiths
+```
+
+```r
+# Task 1
+## move from wide format to narrow
+data("singer_locations")
+
+hfd_y <-singer_locations %>%
+  select(year, duration:artist_familiarity) %>%
+  gather(key= "Measures", value = "My_Values", 
+    duration:artist_familiarity)
+
+## graph the above in a meaningful way
+hfd_y %>%
+  filter(year > 1950) %>%
+  ggplot(aes(x = year, y = My_Values)) +
+  geom_point() +
+  facet_wrap(~Measures, scales = "free_y")  #free_y = allows y scales to match data for each graph in facet
+```
+
+![](Lecture_Notes_files/figure-html/unnamed-chunk-41-1.png)<!-- -->
+
+```r
+# Task 2: Add unique identifer and move back to wide format
+hfd_y2 <-singer_locations %>%
+  select(song_id, year, duration:artist_familiarity) %>%
+  gather(key= "Measures", value = "My_Values", 
+    duration:artist_familiarity)
+
+hfd_y2 %>%
+  spread(Measures, My_Values) #spread only works when each row has it's own unique ID
+```
+
+```
+## # A tibble: 10,100 x 5
+##               song_id  year artist_familiarity artist_hotttnesss duration
+##  *              <chr> <int>              <dbl>             <dbl>    <dbl>
+##  1 SOAACEN12A8C13AC90  2005         0.77531968         0.4823410 357.1718
+##  2 SOAAEOE12A67021AA2  2002         0.58969461         0.3838637 212.8453
+##  3 SOAAEUS12AB0184906  1990         0.44743723         0.4266528 243.4869
+##  4 SOAAHHZ12AB0181950  2005         0.05807275         0.0000000 253.8314
+##  5 SOAAIJG12AAA15D821  2008         0.72233073         0.4859998 399.7514
+##  6 SOAAMSA12AB0185275  2008         0.62352595         0.4373072 208.2216
+##  7 SOAAPDT12A6D4F9957  2002         0.50247255         0.3420969 276.7408
+##  8 SOAAQSY12A58A7CBFF  1990         0.52227232         0.3660433 219.7416
+##  9 SOAARXN12D021B0F39  2007         0.82290110         0.5756396 298.9710
+## 10 SOAASND12A58A7A70B  2001         0.64758740         0.4309697 226.2200
+## # ... with 10,090 more rows
+```
+
+```r
+# Task 3: Use Reshape 2 when do not have a unique ID or when you want to aggregate some rows
+hfd_y %>%
+  dcast(year ~ Measures, value.var = "My_Values", fun.aggregate = mean, na.rm = TRUE) 
+```
+
+```
+##    year artist_familiarity artist_hotttnesss duration
+## 1     0          0.5052371         0.3239388 240.1991
+## 2  1922          0.4891340         0.3496206 180.4012
+## 3  1926          0.5948666         0.3828469 172.8257
+## 4  1927          0.5948666         0.3828469 195.9702
+## 5  1929          0.5061268         0.3507879 170.9710
+## 6  1937          0.5190001         0.3530357 181.7857
+## 7  1940          0.5012381         0.3568980 194.9775
+## 8  1945          0.3646056         0.4688427 137.6387
+## 9  1947          0.4258833         0.3136478 181.0804
+## 10 1948          0.6499450         0.4419084 190.3016
+## 11 1951          0.5825867         0.4216157 167.9408
+## 12 1952          0.6503980         0.4358152 165.1718
+## 13 1953          0.5942116         0.3951581 123.1756
+## 14 1954          0.7512638         0.5491553 182.9002
+## 15 1955          0.5507106         0.3981285 232.0453
+## 16 1956          0.5965135         0.4384135 181.9633
+## 17 1957          0.5757590         0.4079749 214.6303
+## 18 1958          0.6442515         0.4223344 239.5228
+## 19 1959          0.6194515         0.4355119 176.9791
+## 20 1960          0.5916395         0.4066395 213.2806
+## 21 1961          0.5577460         0.3961865 173.3762
+## 22 1962          0.5790061         0.4146647 240.8712
+## 23 1963          0.5870445         0.4085145 160.7105
+## 24 1964          0.5746336         0.3683188 182.5898
+## 25 1965          0.6066903         0.4083368 218.1328
+## 26 1966          0.6367878         0.4237375 169.1816
+## 27 1967          0.6203433         0.4490179 170.0589
+## 28 1968          0.6100990         0.4303272 186.0353
+## 29 1969          0.6240159         0.4357142 198.1069
+## 30 1970          0.6300334         0.4473265 276.4579
+## 31 1971          0.6217453         0.4463278 231.1737
+## 32 1972          0.5917494         0.4222272 292.6662
+## 33 1973          0.5895343         0.4204878 290.2804
+## 34 1974          0.6195374         0.4305658 220.5718
+## 35 1975          0.6040239         0.4122132 244.3799
+## 36 1976          0.6178990         0.4249131 277.7451
+## 37 1977          0.6254185         0.4286107 258.2891
+## 38 1978          0.6196770         0.4492856 221.8575
+## 39 1979          0.6029274         0.4173256 262.6671
+## 40 1980          0.6108205         0.4292917 235.9252
+## 41 1981          0.6139829         0.4438614 227.0903
+## 42 1982          0.6027000         0.4060857 237.9836
+## 43 1983          0.6279947         0.4400708 242.7893
+## 44 1984          0.6170992         0.4427675 261.4660
+## 45 1985          0.6068504         0.4277469 260.7566
+## 46 1986          0.6074905         0.4330136 243.6317
+## 47 1987          0.6177712         0.4442072 256.1722
+## 48 1988          0.5926340         0.4196773 238.2824
+## 49 1989          0.5907609         0.4119238 257.2638
+## 50 1990          0.5764988         0.4088248 240.4475
+## 51 1991          0.5756165         0.4022150 247.6053
+## 52 1992          0.5762538         0.4019781 243.5632
+## 53 1993          0.5706703         0.3887713 241.2611
+## 54 1994          0.5769310         0.4015449 251.2840
+## 55 1995          0.5800948         0.4068184 243.3836
+## 56 1996          0.5786344         0.4030835 244.1976
+## 57 1997          0.5876600         0.3933718 247.7938
+## 58 1998          0.5821633         0.4095104 260.0710
+## 59 1999          0.5931064         0.4147859 254.1444
+## 60 2000          0.5943571         0.4120225 260.3667
+## 61 2001          0.5847773         0.3958336 261.7468
+## 62 2002          0.5812809         0.4059217 257.5316
+## 63 2003          0.6072930         0.4201097 243.3904
+## 64 2004          0.6001547         0.4171090 239.3157
+## 65 2005          0.5983023         0.4107221 246.3510
+## 66 2006          0.5986434         0.4083919 246.5558
+## 67 2007          0.6134667         0.4177400 254.8794
+## 68 2008          0.6114963         0.4253368 258.8586
+## 69 2009          0.6190572         0.4426654 245.9941
+## 70 2010          0.6257959         0.4571736 257.6905
+```
+
+```r
+# The above means take the year value, use measures to spread the remaining columns, and use mean to aggregrate all rows for that year
+# If used variance instead of mean, you get some rows as N/A because there is only 1 row for that year (and therefore there is no variance to aggreate all the rows for that year)
+```
+  
+The rest of the lecture was about R objectives along with classes different objects apply (an object can belong to more than one class, e.g. ggplot, tibble). Interesting: >%> is a function (class(`%>%`)) and therefore can be used as a function. 
+
+    
+ 
+  
