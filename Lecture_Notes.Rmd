@@ -833,17 +833,6 @@ my_mat
 #Change one entry of singer_locations 
 singer_locations$year[4] <- as.character(singer_locations$year[4])
   # when you change one entry, the entire column changes
-
-#factors
-library(forcats)
-
-#can see there are no factors
-glimpse(singer_locations)
-
-#create a factor variable
-s1 <- singer_locations %>%
-  mutate(artist_name_factor = as_factor(artist_name))
-
 ```
 
 ## reading a file into R
