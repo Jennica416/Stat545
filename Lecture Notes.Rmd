@@ -842,7 +842,7 @@ glimpse(singer_locations)
 
 #create a factor variable
 s1 <- singer_locations %>%
-  mutate(artist_name_factor = as_factor(artist_name))
+  mutate(artist_name_factor = as_factor(artist_name))  # as_factor keeps levels order; base functions change order
 
 ```
 
